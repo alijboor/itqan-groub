@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel='stylesheet' href='../../indess.css'>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    </head>
+    <body>        
+        <div id="data">
+        </div>
+    </body>
+
+    <script>
+        var all_data;
+        console.log("000000");
+
+        $.post("../../phpFiles/order/orders.php", {webToken : document.cookie},  function (data , stauts){
+            data = JSON.parse(data);
+            all_data = data;
+            var datTable='';
+            console.log(data);
+            console.log(all_data + "000000");
+
+            for (let j = 0; j < data.length; j++) {
+                datTable += "<tr id='row"+j+"'><td>" + data[j][0]+ "</td>";
+                datTable += "<td>" + data[j][1]+ "</td><td id='idst"+j+"'>" + "</td><td>" + data[j][2]+ "</td> <td> <button href='#' class='btn btn-danger' >Check item</button> </td> <td></tr>";
+            }
+
+            var table = `
+                <div>
+                    <table class="table table-sm" id="table-data">
+                        <thead>
+                            <tr>
+                                <th scope="col">الحساب</th>
+                                <th scope="col">نوع الطلبية</th>
+                                <th scope="col">عدد الاصناف</th>
+                                <th scope="col">باركود</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>`+datTable+`</tbody>
+                    </table>	
+                </div>
+            `;
+            $('#data').append(table);
+        });

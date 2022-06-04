@@ -2,13 +2,14 @@
 session_set_cookie_params(99999999,"/");
 session_start();
 
-require 'connection.php';
+require '../../connection.php';
 
 $itemid = $_GET['idnonDisplay'];
 $status = $_GET['state'];
+$order_id = $_GET['orderid'];
 // $quan = $_POST['quantity'];
 
-$res_orderdet=mysqli_query($conn, "UPDATE ordersdet SET  `status`= '$status' where detid = $itemid");
+$res_orderdet=mysqli_query($conn, "UPDATE ordersdet SET  `status`= '$status' where detid = $itemid AND theorderid = $order_id");
 // $addtional = $status + $quan;
 // $data = json_decode(stripslashes($_POST['data']));
 

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel='stylesheet' href='../../indess.css'>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    </head>
+    <body>
+        <div class="search">
+            <input type="text" placeholder="ابحث" id="search">
+            <button class="btn btn-primary mb-2" onclick="open_popup_by_value()">بحث</button>
+        </div>
+        <br>
+        
+        <div id="datatable" style="display: none;">
+        </div>
+        <div id="childparent">
+        </div>
+        
+        <form id="save" method="post" enctype="multipart/form-data">
+            <div class="save">
+                <div>
+                    <input class="form-control form-control-lg" name="image" type="file">
+                </div>              
+                <button class="btn btn-success mb-2" type="submit" id="savePopUp">حفظ</button>
+            </div>
+        </form>
+        
+        <div class="bg-modal">
+            <div class="modal-contents">
+                <div class="close">+</div>
+                <div class="content-pop">
+                    <p id="NameOfItem"></p>
+                    <p id="QuanOfItem"></p>
+
+                    <input type="text" id="idnonDisplay" name="idnonDisplay" style="display: none;" >
+                    <select id="state" disabled name="state">
+                        <option value="B"></option>
+                        <option id="green" style='background-color:LimeGreen' value="G">تم التجهيز</option>
+                        <option id="red" style='background-color:red' value="R">غير جاهز</option>
+                        <option id="pink" style='background-color:rgb(240, 15, 146)' value="M">تجهيز جزئي</option>
+                    </select>
+                    <div class="number-input">
+                        <button onclick="dec()">-</button>
+                        <input type="number" id="quantity" name="quantity" min="0" step="1" readonly onchange="on_Edit()">
+                        <button onclick="inc()">+</button>  
+                    </div>
+                    <a  class="btn btn-success" onclick="Update_data()">حفظ</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- parent pop up action="updateParentImage.php"-->
+        <form  id="parentForm" method="post" enctype="multipart/form-data">
+            <div class="parent-modal">
+                <div class="modal-content-parent">
+                    <div class="close" id="parentClose">+</div>
+    
+                    <div class="content-pop">
+                        <input type="text" id="orderid" name="orderid">
+
+    
+                        <div class="default-weight">
+                            <input type="text" id="defaultweight" disabled name="defaultweight" > -: الوزن الكلي </input>
+                        </div>
+    
+                        <div class="approximate-weight">
+                            <input type="text" id="approximateweight" disabled name="approximateweight" > -: الوزن التقريبي </input>
+                        </div>
+    
+                        <div class="act-weight">
+                            <input type="text" id="actualweight"  > -: الوزن الفعلي </input>
+                        </div>
+    
+                        <div class="percentage-error">
+                            <input type="text" id="percentageError" disabled name="percentageError" > -: نسبة الخطأ </input>
+                        </div>
+
+    
+                        <input type="text" id="idnonDisplay" name="idnonDisplay" style="display: none;" >
+                        <select id="state" disabled name="state">
+                            <option value="B"></option>
+                            <option id="green" style='background-color:LimeGreen' value="G">تم التجهيز</option>
+                            <option id="red" style='background-color:red' value="R">غير جاهز</option>
+                            <option id="pink" style='background-color:rgb(240, 15, 146)' value="M">تجهيز جزئي</option>
+                        </select>
+                        <div>
+                            <input class="form-control form-control-lg" name="image" type="file">
+                        </div>    
+                        <button  class="btn btn-success" type="submit">حفظ</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        
+        
+        <script>
+            var all_data;
+            var child_ctr = 0;
+            const params = window.location.search;
+            const orderid= params.substring(params.indexOf('?'), params.length);
+            var checkTableData = 0; // to check there is data for item or not
+            var checkParentChildData = 0; // to check there is data for parent child or not
+
+            $.post("../../phpFiles/orderitem/testorderitem.php"+ orderid, {webToken : document.cookie},  function (data , stauts){
+                data = JSON.parse(data);
+                all_data = data;
+                var datTable='';
+                var parentHead = [];
+                var parent_child_data = '';
+                var child_data ='';
+
+                for (let j = 0; j < data.length; j++) {
+                    all_data[j].push(0); // add bool col. for check visit for items details
+                    if(data[j][4] == 'G'){
+                        status_ar = 'تم التجهيز';
+                    }
+                    else if(data[j][4] == 'R'){
+                        status_ar = 'غير جاهز';
+                    }
+                    else if(data[j][4].substring(0, 1) == 'M'){
+                        status_ar = 'تجهيز جزئي';
+                    }
+                    else{ 
+                        status_ar = '';
+                    }
+
+                    if(data[j][5] == 'a_store' || data[j][5] == 'a_storePicture'){
+                        checkTableData= 1;
+                        datTable += "<tr id='row"+j+"'><td>" + data[j][2]+ "</td>";
+                        datTable += "<td>" + data[j][1]+ "</td><td id='idst"+j+"'>" + status_ar + "</td><td>" + data[j][3]+ "</td> <td> <button  onclick='open_popup("+j+")' class='btn btn-danger' >Check item</button> </td> <td></tr>";
+                    }
+                    else {
+                        if(data[j][5] == 'a_al'){
+                            checkParentChildData = 1;
+                            var img_ctr = 0;
+                            console.log(data[j]);
+                            parentHead.push(data[j]);
+                            parent_child_data +="<tr id='row"+j+"'><td>" + data[j][2]+ "</td>";
+                            parent_child_data += "<td>" + data[j][1]+ "</td><td id='idst"+j+"'>" + status_ar + "</td><td>" + data[j][3]+ "</td> <td> <button  onclick='open_parent_popup("+j+")' class='btn btn-danger' >Check item</button> </td> <td></tr>";
+                            for (let i_child = 0; i_child < data.length; i_child++) { //for loop to get all child of that parent
+                                if(data[i_child][5] == 'b_al' && data[i_child][6] == data[j][7]){
+                                    child_data += "<tr id='row"+i_child+"'><td> </td><td> <img height=100 width=100 src=http://127.0.0.1:8887/items/"+data[i_child][7]+"_0.png"+" ></td><td>" + data[i_child][2]+ "</td>";
+                                    child_data += "<td>" + data[i_child][1]+ "</td><td id='idst"+i_child+"'>" + status_ar + "</td><td>" + data[i_child][3]+ "</td><td>" + data[i_child][8]+ "</td><td>" + data[i_child][9]+ "</td><td>" + "الرف"+ "</td><td>" + "المجموعة"+ "</td>";
+                                    child_data+= "<td> <button onclick='open_popup("+i_child+")' class='btn btn-danger' >Check item</button> </td> <td></tr>";
+                                    img_ctr+=1;
+                                }
+                            }
+                            parent_child_data +=`
+                            <tr>
+                                <td >
+                                    <table class="table table-sm" id="table-data">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col"> </th>
+                                                <th scope="col">الصورة</th>
+                                                <th scope="col">إسم الصنف</th>
+                                                <th scope="col">الكمية المطلوبة</th>
+                                                <th scope="col">حالة الصنف</th>
+                                                <th scope="col">باركود</th>
+                                                <th scope="col">الطول</th>
+                                                <th scope="col">العرض</th>
+                                                <th scope="col">الرف</th>
+                                                <th scope="col">المجموعة</th>
+                                                <th scope="col"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`+child_data+`</tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            `;
+
+                        }
+                        // if(data[j][5] == 'b_al'){
+                        //     // child_data += "<tr id='row"+j+"'><td>" + data[j][2]+ "</td>";
+                        //     // child_data += "<td>" + data[j][1]+ "</td><td id='idst"+j+"'>" + status_ar + "</td><td>" + data[j][3]+ "</td> <td> <button onclick='open_popup("+j+")' class='btn btn-danger' >Check item</button> </td> <td></tr>";
+                        //     parent_child_data += "<tr id='row"+j+"'><td style='text-align: center;'>" + data[j][2]+ "</td>";
+                        //     parent_child_data += "<td>" + data[j][1]+ "</td><td id='idst"+j+"'>" + status_ar + "</td><td>" + data[j][3]+ "</td> <td> <button onclick='open_popup("+j+")' class='btn btn-danger' >Check item</button> </td> <td></tr>";
+                        // }
+                    }
+                }
+                // insert childs into parent row as array
+                for (let parentCTR = 0; parentCTR < parentHead.length; parentCTR++) {
+                    for (let childCTR = 0; childCTR < data.length; childCTR++) {
+                        if(data[childCTR][5] == 'b_al' && all_data[childCTR][6] ==  parentHead[parentCTR][7]){
+                            parentHead[parentCTR].push(data[childCTR]);
+                        }  
+                    }
+                }
+                var table = `
+                    <div>
+                        <table class="table table-sm" id="table-data">
+                            <thead>
+                                <tr>
+                                    <th scope="col">إسم الصنف</th>
+                                    <th scope="col">الكمية المطلوبة</th>
+                                    <th scope="col">حالة الصنف</th>
+                                    <th scope="col">باركود</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>`+datTable+`</tbody>
+                        </table>	
+                    </div>
+                `;
+
+                var par_child = `
+                    <br>
+                    <div>
+                        <table class="table table-sm" id="table-data">
+                            <thead>
+                                <tr>
+                                    <th scope="col">إسم الصنف</th>
+                                    <th scope="col">الكمية المطلوبة</th>
+                                    <th scope="col">حالة الصنف</th>
+                                    <th scope="col">باركود</th>
+                                    <th scope="col"></th>
+                                </tr>
+                            </thead>
+                            <tbody>`+parent_child_data+`</tbody>
+                        </table>	
+                    </div>
+                `;
+
+                
+                if(checkTableData){
+                    document.getElementById('datatable').style.display = "block";
+                    $('#datatable').append(table);
+                }
+                if(checkParentChildData){
+                    document.getElementById('childparent').style.display = "block";
+                    $('#childparent').append(par_child);
+                }
+            });
+
+            var static_quan = 0;
+            var static_index = 0; // variable handell the index of item that you search for it
+
+            // open item pop up by value
+            function open_popup_by_value() {
+                document.getElementById('NameOfItem').innerHTML = '';
+                document.getElementById('QuanOfItem').innerHTML = '';
+                var val = document.getElementById('search').value;
+                var parent_child_barcode = document.getElementById('search').value.split(" ");
+                var multibar_isfound = 0;
+                var multi_barcode;
+                var isfound=0;// for check if the item that searched by barcode is found.
+                for (let i = 0; i < all_data.length; i++) {
+                    if(all_data[i][3].includes("█")){// for boolean var to check the barcode is found in item that it's with mulit barcode
+                        multi_barcode = all_data[i][3].split("█");
+
+                        for (let kk = 0; kk < multi_barcode.length; kk++) {
+                            if(parent_child_barcode.length <= 1){
+                                if(multi_barcode[kk] === val){
+                                    multibar_isfound = 1;
+                                }
+                            }
+                            else{
+                                if(multi_barcode[kk] === parent_child_barcode[0]){
+                                    multibar_isfound = 1;
+                                }
+                            }
+                        }
+
+                    }
+
+                    if(parent_child_barcode.length <= 1 )
+                    {    
+                        if(all_data[i][5] === 'a_al' ){
+                            if( (all_data[i][3] == val || multibar_isfound) && val != ''){
+                                document.getElementById('orderid').value = all_data[i][10];
+                                var isVisitChild =1; //for check all child is visited
+                                isfound = 1; 
+                                for (let checkVisit = 0; checkVisit < all_data.length; checkVisit++) {
+                                    if(all_data[checkVisit][5] == 'b_al' && !all_data[checkVisit][11] ){
+                                        if(all_data[checkVisit][6] == all_data[i][7]){
+                                            isVisitChild = 0;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (isVisitChild){ // if all child is ready(visited) pop up the parent form
+                                    document.querySelector('.parent-modal').style.display = "flex";
+                                    var allWeight = 0;
+                                    var approx_weight = 0;
+                                    for (let index = 0; index < all_data.length  ; index++) {
+                                        if(all_data[index][5] == 'b_al'){
+                                            if(all_data[index][6] == all_data[i][7]){ // check the child for this parent 
+                                                allWeight += ((all_data [index][9])* (all_data [index][8]) * (all_data [index][1]));
+                                                if(all_data [index][4].substring(0, 1) == 'M'){
+                                                    approx_weight += ((all_data [index][9])* (all_data [index][8]) * (all_data [index][4].substring(2, 4)));
+                                                }
+                                                else {
+                                                    approx_weight += ((all_data [index][9])* (all_data [index][8]) * (all_data [index][1]));
+                                                }
+                                            }
+                                        }
+                                    }
+                                    document.getElementById('defaultweight').value= allWeight;
+                                    document.getElementById('approximateweight').value= approx_weight;
+                                    static_index = i;
+                                    break;
+                                }
+                                else{ // if a single child not ready(visited) pop up the alert
+                                    alert("يجب عليك تجهيز كل الاصناف الفرعية لهذا الصنف أولا \n حاول بعد تجهيزهن جميعا رجاءً.");
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            if((all_data[i][3] == val || multibar_isfound) && val != '' && all_data[i][5] != 'b_al'){
+                                document.querySelector('.bg-modal').style.display = "flex";
+                                document.getElementById("quantity").value = all_data[i][1];
+                                static_quan = all_data[i][1];
+                                document.getElementById("quantity").max = all_data[i][1];
+                                on_Edit();
+                                document.getElementById('idnonDisplay').value = all_data[i][0];
+                                isfound = 1;
+                                static_index = i;
+                                var NameShouldShowHere = document.getElementById("NameOfItem");
+                                NameShouldShowHere.textContent += "اسم المنتج :  "+all_data [static_index][2];
+                                var quanshouldshownhere = document.getElementById('QuanOfItem');
+                                quanshouldshownhere.textContent += " الكمية المطلوبة للتجهيز :  " + all_data [static_index][1];
+                                break;
+                            }
+                        }
+                    }
+                    else {
+                        //check the child
+                        if(all_data[i][3] == parent_child_barcode[0] || multibar_isfound){
+                            for (let e = 0; e < all_data.length; e++) {
+                                if(parent_child_barcode[parent_child_barcode.length - 1] == all_data[e][3] || multibar_isfound){
+                                    document.querySelector('.bg-modal').style.display = "flex";
+                                    document.getElementById("quantity").value = all_data[i][1];
+                                    static_quan = all_data[i][1];
+                                    document.getElementById("quantity").max = all_data[i][1];
+                                    on_Edit();
+                                    document.getElementById('idnonDisplay').value = all_data[i][0];
+                                    isfound = 1;
+                                    static_index = i;
+                                    var NameShouldShowHere = document.getElementById("NameOfItem");
+                                    NameShouldShowHere.textContent += "اسم المنتج :  "+all_data [static_index][2];
+                                    var quanshouldshownhere = document.getElementById('QuanOfItem');
+                                    quanshouldshownhere.textContent += " الكمية المطلوبة للتجهيز :  " + all_data [static_index][1];
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if(!isfound)
+                   alert("العنصر الرئيسي او الفرعي او كلاهما غير موجود \n يرجى التأكد من المدخلات");
+            }
+        
+            
+            function on_Edit(){
+                var quan = document.getElementById("quantity").value;
+                if (quan == 0){
+                    document.getElementById("red").selected = 'selected';
+                }
+                else if(quan == static_quan){
+                    document.getElementById("green").selected = 'selected';
+                }
+                else {
+                    document.getElementById("pink").selected = 'selected';
+                }
+            }
+        
+            function Update_data(){
+                var status = '';
+                if(document.getElementById("state").value == 'M')
+                    status = document.getElementById("state").value+"█"+ document.getElementById("quantity").value;
+                else
+                    status = document.getElementById("state").value;
+                all_data [static_index][4] = status;
+                all_data[static_index][11]=1; // make it visited
+                var elem = "idst"+static_index;
+                var rowid= "row"+static_index;
+                document.getElementById(elem).value = all_data [static_index][4];
+                if(all_data [static_index][4] == 'G'){
+                    document.getElementById(elem).innerHTML = 'تم التجهيز';
+                    document.getElementById(rowid).style.backgroundColor = "LimeGreen";
+                }
+                else if(all_data [static_index][4] == 'R'){
+                    document.getElementById(elem).innerHTML = 'غير جاهز';
+                    document.getElementById(rowid).style.backgroundColor = "red";
+                }
+                else if(all_data [static_index][4].substring(0, 1) == 'M'){
+                    document.getElementById(elem).innerHTML = 'تجهيز جزئي';
+                    document.getElementById(rowid).style.backgroundColor = "rgb(240, 15, 146)";
+                }
+                Check_visit();
+                document.querySelector('.bg-modal').style.display = "none";
+            }
+
+            function Check_visit(){
+                let visited = 1;
+                let e =0;
+                for (let counter = 0; counter < all_data.length; counter++) {
+                    if(!all_data[counter][11]){
+                        visited = 0;
+                        e = counter;
+                        break;
+                    }
+                }
+                if(visited){
+                    document.getElementById('orderid').value = all_data[e][10];
+                    document.querySelector(".save").style.display = "grid";
+                }
+            }
+        
+            $('#save').submit(function(e){
+                e.preventDefault();
+                var thisBtn = $(this);
+                var thisForm = thisBtn.closest("form");
+                var formData = new FormData(thisForm[0]);
+                formData.append("orderid", all_data[static_index][10]);
+                $.ajax({
+                        type: "POST",
+                        url: "../../updateParentImage.php",
+                        data: formData, 
+                        success: function(response){
+                            var jsonData = JSON.parse(response);
+                            if (jsonData.success == "1"){
+                                alert(" تم حفظ الصورة");
+                                saveData();
+                            }
+                            else{
+                                alert(jsonData.filename + 'حدث خطأ!' + jsonData.query);
+                            }
+                        },
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    });
+                });
+
+            function saveData(){
+                for (let i = 0; i < all_data.length; i++) {
+                    $.post("../../phpFiles/orderitem/updateitem.php?idnonDisplay="+all_data[i][0]+ "&state="+all_data[i][4]+ "&orderid="+all_data[i][10], {
+                        webToken : document.cookie},
+                        function (data , stauts){
+                        console.log('0');    
+                    });
+                }
+                window.location.reload();
+            }
+
+            // // save images
+            $('#parentForm').submit(function(e){
+                e.preventDefault();
+                var thisBtn = $(this);
+                var thisForm = thisBtn.closest("form");
+                var formData = new FormData(thisForm[0]);
+                $.ajax({
+                        type: "POST",
+                        url: "../../updateParentImage.php",
+                        data: formData, 
+                        success: function(response){
+                            var jsonData = JSON.parse(response);
+                            if (jsonData.success == "1"){
+                                alert(" تم حفظ الصورة");
+                                document.querySelector('.parent-modal').style.display = "none";
+                            }
+                            else{
+                                alert(jsonData.filename + 'حدث خطأ!' + jsonData.query);
+                            }
+                        },
+                        cache: false,
+                        contentType: false,
+                        processData: false
+                    });
+                    Update_data();
+                });
+
+            // open item pop up
+            function open_popup(dataindex) {
+                document.getElementById('NameOfItem').innerHTML = '';
+                document.getElementById('QuanOfItem').innerHTML = '';// clear the popup
+
+                document.querySelector('.bg-modal').style.display = "flex";
+                document.getElementById("quantity").value = all_data[dataindex][1];
+                static_quan = all_data[dataindex][1];
+                document.getElementById("quantity").max = all_data[dataindex][1];
+                on_Edit();
+                document.getElementById('idnonDisplay').value = all_data[dataindex][0];
+                isfound = 1;
+                static_index = dataindex;
+                var NameShouldShowHere = document.getElementById("NameOfItem");
+                NameShouldShowHere.textContent += "اسم المنتج :  "+all_data [static_index][2];
+                var quanshouldshownhere = document.getElementById('QuanOfItem');
+                quanshouldshownhere.textContent += " الكمية المطلوبة للتجهيز :  " + all_data [static_index][1];
+
+            }
+
+            // close item pop up
+            document.querySelector('.close').addEventListener("click", function() {
+            document.querySelector('.bg-modal').style.display = "none";
+            });
+
+            // open parent pop up
+            function open_parent_popup(elem) {
+                document.getElementById('orderid').value = all_data[elem][10];
+                document.querySelector('.parent-modal').style.display = "flex";
+                var allWeight = 0;
+                var approx_weight = 0;
+                for (let index = 0; index < all_data.length  ; index++) {
+                    if(all_data[index][5] == 'b_al'){
+                        if(all_data[index][6] == all_data[elem][7]){ // check the child for this parent 
+                            allWeight += ((all_data [index][9])* (all_data [index][8]) * (all_data [index][1]));
+                            if(all_data [index][4].substring(0, 1) == 'M'){
+                                approx_weight += ((all_data [index][9])* (all_data [index][8]) * (all_data [index][4].substring(2, 4)));
+                            }
+                            else {
+                                approx_weight += ((all_data [index][9])* (all_data [index][8]) * (all_data [index][1]));
+                            }
+                        }
+                    }
+                }
+                document.getElementById('defaultweight').value= allWeight;
+                document.getElementById('approximateweight').value= approx_weight;
+                static_index = elem;
+            }
+
+            // close parent pop up
+            document.querySelector('#parentClose').addEventListener("click", function() {
+            document.querySelector('.parent-modal').style.display = "none";
+            });
+
+            // search on press enter code
+            document.querySelector("#search").addEventListener('keyup', function(e){
+                if(e.keyCode === 13){
+                    open_popup_by_value();
+                }   
+            })
+
+            function inc(){ // for increase the require number in pop up
+                let number = document.querySelector('[name="quantity"]');
+                if (parseInt(number.value) < parseInt(number.max)){
+                    number.value = parseInt(number.value) + 1;
+                    on_Edit();
+                }
+            }
+
+            function dec(){// for decrease the require number in pop up
+                let number = document.querySelector('[name="quantity"]');
+                if (parseInt(number.value) > 0) {
+                    number.value = parseInt(number.value) - 1;
+                    on_Edit();
+                }
+            }
+
+            //calculate the prescentage error and display it.
+            document.querySelector("#actualweight").addEventListener('keyup', function(e){
+                let actual_weight = document.getElementById('actualweight').value;
+                let approxim_weight = document.getElementById('approximateweight').value;
+                let numerator = (approxim_weight - actual_weight);
+                var calc = Math.abs((numerator / approxim_weight)*100);
+                document.getElementById('percentageError').value = (calc.toFixed(2)) + "%";
+            });
+        </script>
+        
+    </body>    
+</html>

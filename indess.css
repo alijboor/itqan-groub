@@ -8,6 +8,11 @@
 	justify-content: center;
 	align-items: center;
 }
+/* 
+#datatable{
+    display: none;
+} */
+
 .bg-modal {
 	background-color: rgba(0, 0, 0, 0.8);
 	width: 100%;
@@ -42,6 +47,8 @@
 .save{
     display: none;
     padding: 10px;
+    justify-items: center;
+
 }
 
 #orderid{
