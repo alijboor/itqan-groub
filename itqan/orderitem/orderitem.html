@@ -104,6 +104,7 @@
             const orderid= params.substring(params.indexOf('?'), params.length);
             var checkTableData = 0; // to check there is data for item or not
             var checkParentChildData = 0; // to check there is data for parent child or not
+            var ord_id_for_status = orderid.substring(orderid.indexOf('=')+1, orderid.length);
 
             $.post("../../phpFiles/orderitem/testorderitem.php"+ orderid, {webToken : document.cookie},  function (data , stauts){
                 data = JSON.parse(data);
@@ -173,6 +174,7 @@
                                 </td>
                             </tr>
                             `;
+                            child_data = "";
 
                         }
                         // if(data[j][5] == 'b_al'){
@@ -449,7 +451,12 @@
                         console.log('0');    
                     });
                 }
-                window.location.reload();
+                $.post("../../phpFiles/order/updatestatusorder.php?state=0&orderid="+ord_id_for_status, {
+                        webToken : document.cookie},
+                        function (data , stauts){
+                        console.log('0');    
+                    });
+                window.location.replace("http://127.0.0.1:8885/itqan/orders/orders.html?status=1");
             }
 
             // // save images

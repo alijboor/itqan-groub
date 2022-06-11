@@ -14,8 +14,10 @@
 
     <script>
         var all_datas;
+        const params = window.location.search;
+        const orderstatus= params.substring(params.indexOf('?'), params.length);
 
-        $.get("../../phpFiles/order/orders.php", {webToken : document.cookie},  function (data , stauts){
+        $.get("../../phpFiles/order/orders.php"+orderstatus, {webToken : document.cookie},  function (data , stauts){
             data = JSON.parse(data);
             all_datas = data;
             var datTable='';
